@@ -1,0 +1,68 @@
+extends CharacterBody2D
+
+
+@export var walk_speed: float = 150
+@export_range(0, 3) var deceleration: float = 3
+const JUMP_VELOCITY = -300.0
+var double_jump = 1 
+func jump():
+	velocity.y = JUMP_VELOCITY #jump
+	
+	# Gravity
+	var gravity = ProjectSettings.get_setting("physics/2d/default_gravity") # Get the gravity from the project settings to be synced with RigidBody nodes.
+
+@onready var animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
+
+
+
+
+func _physics_process(delta):
+	# Add the gravity.
+	if not is_on_floor():
+		velocity += get_gravity() * delta
+
+	# Handle jump.
+	if Input.is_action_just_pressed("jump") and is_on_floor(): #if u jump on floor
+		velocity.y = JUMP_VELOCITY #jump
+		
+	# Double jump
+	if Input.is_action_just_pressed("jump") and not is_on_floor(): #if u press jump and airborne
+		if double_jump > 0: #if ur doublejump value is more than 0
+			velocity.y = JUMP_VELOCITY #"how high to jump" = referense to how high
+			double_jump -= 1 #how many times u can double jump
+
+	# Reset double jump when on the floor
+	if is_on_floor():
+			double_jump = 1
+	
+	
+	# Get the input direction: -1, 0, 1
+	var direction := Input.get_axis("move_left", "move_right")
+	
+	# Flip the Sprite
+	if direction > 0:
+		animated_sprite.flip_h = false #when direction is less than 0 (left)
+	elif direction < 0:
+		animated_sprite.flip_h = true #when direction is more than 0 (right)
+	
+	# Animations
+	if is_on_floor():
+		if direction == 0:
+			animated_sprite.play("idle")
+		else:
+			animated_sprite.play("run")
+	else:
+		animated_sprite.play("jump")
+	
+	
+	
+	# Apply movement
+	if direction:
+		velocity.x = direction * walk_speed
+	else:
+		var deceleration_force = walk_speed * deceleration * delta
+		velocity.x = move_toward(velocity.x, 0, deceleration_force) #(FROM, TO, DELTA)
+		print("Velocity X: ",velocity.x,  " | Deceleration Force: ", deceleration_force) #debug print
+
+# Move the character
+	move_and_slide()
